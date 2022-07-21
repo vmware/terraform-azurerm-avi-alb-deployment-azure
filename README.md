@@ -1,7 +1,7 @@
 # AVI Controller Deployment on Azure Terraform module
 This Terraform module creates and configures an AVI (NSX Advanced Load Balancer) Controller on Azure
-[![Avi - Single Site Deployment](https://github.com/slarimore02/terraform-azurerm-avi-controller-azure/actions/workflows/single-site-test.yml/badge.svg)](https://github.com/slarimore02/terraform-azurerm-avi-controller-azure/actions/workflows/single-site-test.yml)
-[![Avi - 2 Site GSLB Deployment](https://github.com/slarimore02/terraform-azurerm-avi-controller-azure/actions/workflows/dual-site-gslb-test.yml/badge.svg)](https://github.com/slarimore02/terraform-azurerm-avi-controller-azure/actions/workflows/dual-site-gslb-test.yml)
+[![Avi - Single Site Deployment](https://github.com/vmware/terraform-azurerm-avi-alb-deployment-azure/actions/workflows/single-site-test.yml/badge.svg)](https://github.com/vmware/terraform-azurerm-avi-alb-deployment-azure/actions/workflows/single-site-test.yml)
+[![Avi - 2 Site GSLB Deployment](https://github.com/vmware/terraform-azurerm-avi-alb-controller-azure/actions/workflows/dual-site-gslb-test.yml/badge.svg)](https://github.com/vmware/terraform-azurerm-avi-alb-deployment-azure/actions/workflows/dual-site-gslb-test.yml)
 
 
 ## Module Functions
@@ -47,7 +47,7 @@ terraform {
   }
 }
 module "avi_controller_azure" {
-  source  = "slarimore02/avi-controller-azure/azurerm"
+  source  = "vmware/avi-alb-deployment-azure/azurerm"
   version = "1.0.x"
 
   region                       = "westus2"
@@ -75,7 +75,7 @@ terraform {
   }
 }
 module "avi_controller_azure_westus2" {
-  source  = "slarimore02/avi-controller-azure/azurerm"
+  source  = "vmware/avi-alb-deployment-azure/azurerm"
   version = "1.0.x"
 
   region                       = "westus2"
@@ -97,7 +97,7 @@ module "avi_controller_azure_westus2" {
   configure_dns_vs             = "true"
 }
 module "avi_controller_azure_eastus2" {
-  source  = "slarimore02/avi-controller-azure/azurerm"
+  source  = "vmware/avi-alb-deployment-azure/azurerm"
   version = "1.0.x"
 
   region                          = "eastus2"
