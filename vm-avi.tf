@@ -30,6 +30,7 @@ locals {
     additional_gslb_sites           = var.additional_gslb_sites
     create_gslb_se_group            = var.create_gslb_se_group
     se_ha_mode                      = var.se_ha_mode
+    upgrade_file_uri                = var.avi_upgrade["upgrade_file_uri"]
   }
   dns_vs_settings = {
     subnet_name        = var.create_networking ? azurerm_subnet.avi[0].name : var.custom_subnet_name,
@@ -125,6 +126,11 @@ resource "null_resource" "ansible_provisioner" {
     destination = "/home/admin/avi-controller-azure-all-in-one-play.yml"
   }
   provisioner "file" {
+    content = templatefile("${path.module}/files/avi-upgrade.yml.tpl",
+    local.cloud_settings)
+    destination = "/home/admin/avi-upgrade.yml"
+  }
+  provisioner "file" {
     content = templatefile("${path.module}/files/avi-cleanup.yml.tpl",
     local.cloud_settings)
     destination = "/home/admin/avi-cleanup.yml"
@@ -137,5 +143,11 @@ resource "null_resource" "ansible_provisioner" {
       "ansible-playbook avi-controller-azure-all-in-one-play.yml -e password=${var.controller_password} -e azure_app_id=\"${var.controller_az_app_id}\" -e azure_auth_token=\"${var.controller_az_client_secret}\" -e azure_tenant_id=\"${data.azurerm_subscription.current.tenant_id}\"  > ansible-playbook.log 2> ansible-error.log",
       "echo Controller Configuration Completed"
     ]
+  }
+  provisioner "remote-exec" {
+    inline = var.avi_upgrade["enabled"] ? [
+      "ansible-playbook avi-upgrade.yml -e password=${var.controller_password} -e upgrade_type=${var.avi_upgrade["upgrade_type"]} >> ansible-playbook.log 2>> ansible-error.log",
+      "echo Avi upgrade completed"
+    ] : ["echo Avi upgrade skipped"]
   }
 }
