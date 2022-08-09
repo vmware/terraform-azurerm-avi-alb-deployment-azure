@@ -133,6 +133,39 @@ output "westus2_controller_info" {
 ## Private IP Controller Deployment
 For a controller deployment that is only accesible via private IPs the controller_public_address should be set to false to enable this connectivity. In addition it is recommended to either configure VNET peering with the vnet_peering_settings or manually create resource group and VNET/Subnets and specify them with the create-networking = false, custom_controller_resource_group, custom_vnet_name, and custom_subnet_name variables. This is needed so that the controller IPs can be reached by the Ansible provisioner. 
 
+## Day 1 Ansible Configuration and Avi Resource Cleanup
+The module copies and runs an Ansible play for configuring the initial day 1 Avi config. The plays listed below can be reviewed by connecting to the Avi Controller by SSH. In an HA setup the first controller will have these files. 
+
+### avi-controller-azure-all-in-one-play.yml
+This play will configure the Avi Cloud, Network, IPAM/DNS profiles, DNS Virtual Service, GSLB depending on the variables used. The initial run of this play will output into the ansible-playbook.log file which can be reviewed to determine what tasks were ran. 
+
+Example run (appropriate variable values should be used):
+```bash
+~$ ansible-playbook avi-controller-azure-all-in-one-play.yml -e password=${var.controller_password} -e azure_app_id=${var.controller_az_app_id} -e azure_auth_token=${var.controller_az_client_secret} -e azure_tenant_id=${data.azurerm_subscription.current.tenant_id} > ansible-playbook-run.log
+```
+
+### avi-upgrade.yml
+This play will upgrade or patch the Avi Controller and SEs depending on the variables used. When ran this play will output into the ansible-playbook.log file which can be reviewed to determine what tasks were ran. This play can be ran during the initial Terraform deployment with the avi_upgrade variable as shown in the example below:
+
+```hcl
+avi_upgrade = { enabled = "true", upgrade_type = "patch", upgrade_file_uri = "URL Copied From portal.avipulse.vmware.com"}
+```
+
+An full version upgrade can be done by changing changing the upgrade_type to "system". It is recommended to run this play in a lower environment before running in a production environment and is not recommended for a GSLB setup at this time.
+
+Example run (appropriate variable values should be used):
+```bash
+~$ ansible-playbook avi-upgrade.yml -e password=${var.controller_password} -e upgrade_type=${var.avi_upgrade.upgrade_type} -e upgrade_file_uri=${var.avi_upgrade.upgrade_file_uri} > ansible-playbook-run.log
+```
+
+### avi-cleanup.yml
+This play will disable all Virtual Services and delete all existing Avi service engines. This playbook should be ran before deleting the controller with terraform destroy to clean up the resources created by the Avi Controller. 
+
+Example run (appropriate variable values should be used):
+```bash
+~$ ansible-playbook avi-cleanup.yml -e password=${var.controller_password}
+```
+
 ## Contributing
 
 The terraform-azurerm-avi-alb-deployment-azure project team welcomes contributions from the community. Before you start working with this project please read and sign our Contributor License Agreement (https://cla.vmware.com/cla/1/preview). If you wish to contribute code and you have not signed our Contributor Licence Agreement (CLA), our bot will prompt you to do so when you open a Pull Request. For any questions about the CLA process, please refer to our [FAQ](https://cla.vmware.com/faq). For more detailed information, refer to [CONTRIBUTING.md](CONTRIBUTING.md).
