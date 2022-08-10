@@ -13,7 +13,7 @@ locals {
     se_vm_size                      = var.se_vm_size
     use_azure_dns                   = var.use_azure_dns
     se_resource_group               = var.create_resource_group ? azurerm_resource_group.avi[0].name : var.custom_se_resource_group != null ? var.custom_se_resource_group : var.custom_controller_resource_group
-    se_name_prefix                  = var.name_prefix
+    name_prefix                     = var.name_prefix
     controller_ha                   = var.controller_ha
     controller_ip                   = local.controller_ip
     controller_names                = local.controller_names
@@ -30,7 +30,7 @@ locals {
     additional_gslb_sites           = var.additional_gslb_sites
     create_gslb_se_group            = var.create_gslb_se_group
     se_ha_mode                      = var.se_ha_mode
-    upgrade_file_uri                = var.avi_upgrade["upgrade_file_uri"]
+    avi_upgrade                     = var.avi_upgrade
   }
   dns_vs_settings = {
     subnet_name        = var.create_networking ? azurerm_subnet.avi[0].name : var.custom_subnet_name,

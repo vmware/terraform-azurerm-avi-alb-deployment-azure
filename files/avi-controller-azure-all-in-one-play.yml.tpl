@@ -28,7 +28,7 @@
     use_standard_alb: ${use_standard_alb}
     se_vm_size: ${se_vm_size}
     se_ha_mode: ${se_ha_mode}
-    se_name_prefix: ${se_name_prefix}
+    name_prefix: ${name_prefix}
     controller_ha: ${controller_ha}
     use_azure_dns: ${use_azure_dns}
 %{ if dns_servers != null ~}
@@ -52,13 +52,13 @@
     dns_vs_settings: 
       ${ indent(6, yamlencode(dns_vs_settings))}
 %{ endif ~}
-%{ if configure_gslb ~}
+%{ if create_gslb_se_group || configure_gslb ~}
     gslb_site_name: ${gslb_site_name}
+    gslb_user: "gslb-admin"
+%{ endif ~}
+%{ if configure_gslb ~}
     additional_gslb_sites:
       ${ indent(6, yamlencode(additional_gslb_sites))}
-%{ endif ~}
-%{ if create_gslb_se_group && configure_gslb != "true" ~}
-    gslb_site_name: ${gslb_site_name}
 %{ endif ~}
   tasks:
     - name: Wait for Controller to become ready
@@ -148,7 +148,7 @@
           algo: PLACEMENT_ALGO_PACKED
           buffer_se: "0"
           max_se: "10"
-          se_name_prefix: "{{ se_name_prefix }}"
+          se_name_prefix: "{{ name_prefix }}"
           accelerated_networking: true
           instance_flavor: "{{ se_vm_size }}"
           realtime_se_metrics:
@@ -171,7 +171,7 @@
           algo: PLACEMENT_ALGO_PACKED
           buffer_se: "1"
           max_se: "10"
-          se_name_prefix: "{{ se_name_prefix }}"
+          se_name_prefix: "{{ name_prefix }}"
           accelerated_networking: true
           instance_flavor: "{{ se_vm_size }}"
           realtime_se_metrics:
@@ -192,7 +192,7 @@
           min_scaleout_per_vs: 1
           buffer_se: "0"
           max_se: "2"
-          se_name_prefix: "{{ se_name_prefix }}"
+          se_name_prefix: "{{ name_prefix }}"
           accelerated_networking: true
           instance_flavor: "{{ se_vm_size }}"
           realtime_se_metrics:
@@ -243,7 +243,21 @@
             duration: "60"
             enabled: true
       register: gslb_se_group
-%{ endif}
+      - name: Create User for GSLB
+        avi_user:
+          avi_credentials: "{{ avi_credentials }}"
+          default_tenant_ref: "/api/tenant?name=admin"
+          state: present
+          name: "{{ gslb_user }}"
+          access:
+            - all_tenants: true
+              role_ref: "/api/role?name=System-Admin"
+          email: "{{ user_email | default(omit) }}"
+          user_profile_ref: "/api/useraccountprofile?name=No-Lockout-User-Account-Profile"
+          is_superuser: false
+          obj_password: "{{ password }}"
+          obj_username: "{{ gslb_user }}"
+%{ endif }
 %{ if configure_dns_vs ~}
     - name: DNS VS Config | Get Subnet Information
       avi_api_session:
@@ -382,7 +396,7 @@
         name: "GSLB"
         sites:
           - name: "{{ gslb_site_name }}"
-            username: "{{ username }}"
+            username: "{{ gslb_user }}"
             password: "{{ password }}"
             ip_addresses:
               - type: "V4"
@@ -414,7 +428,7 @@
     - name: GSLB Config | Verify Remote Site is Ready
       avi_api_session:
         controller: "${site.ip_address_list[0]}"
-        username: "{{ username }}"
+        username: "{{ gslb_user }}"
         password: "{{ password }}"
         api_version: "{{ api_version }}"
         http_method: get
@@ -427,7 +441,7 @@
     - name: GSLB Config | Verify DNS configuration
       avi_api_session:
         controller: "${site.ip_address_list[0]}"
-        username: "{{ username }}"
+        username: "{{ gslb_user }}"
         password: "{{ password }}"
         api_version: "{{ api_version }}"
         http_method: get
@@ -449,7 +463,7 @@
         path: gslbsiteops/verify
         data:
           name: name
-          username: admin
+          username: "{{ gslb_user }}"
           password: "{{ password }}"
           port: 443
           ip_addresses:
@@ -472,7 +486,7 @@
             sites:
               - name: "${site.name}"
                 member_type: "GSLB_ACTIVE_MEMBER"
-                username: "{{ username }}"
+                username: "{{ gslb_user }}"
                 password: "{{ password }}"
                 cluster_uuid: "{{ gslb_verify.obj.rx_uuid }}"
                 ip_addresses:  
@@ -516,10 +530,39 @@
               ip:
                 type: V4
                 addr: "{{ controller_ip[2] }}"
-        name: "cluster01"
+%{ if configure_gslb || create_gslb_se_group ~}
+        name: "{{ name_prefix }}-{{ gslb_site_name }}-cluster"
+%{ else ~}
+        name: "{{ name_prefix }}-cluster"
+%{ endif ~}            
         tenant_uuid: "admin"
       until: cluster_config is not failed
       retries: 10
       delay: 5
       register: cluster_config
-%{ endif }
+%{ endif ~}
+%{ if avi_upgrade.enabled ~}
+    - name: Pause for 7 minutes for Cluster to form
+      ansible.builtin.pause:
+        minutes: 7
+    
+    - name: Wait for Avi Cluster to be ready
+      avi_api_session:
+        avi_credentials: "{{ avi_credentials }}"
+        http_method: get
+        path: "cluster/runtime"
+      until: cluster_check is not failed
+      retries: 60
+      delay: 10
+      register: cluster_check
+
+    - name: Wait for Avi Cluster to be ready
+      avi_api_session:
+        avi_credentials: "{{ avi_credentials }}"
+        http_method: get
+        path: "cluster/runtime"
+      until: cluster_runtime.obj.cluster_state.state == "CLUSTER_UP_HA_ACTIVE"
+      retries: 60
+      delay: 10
+      register: cluster_runtime
+%{ endif ~}

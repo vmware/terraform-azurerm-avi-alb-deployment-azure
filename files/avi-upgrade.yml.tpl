@@ -8,8 +8,9 @@
   roles:
     - role: avinetworks.avisdk
   vars:
+    upgrade_file_uri: ${avi_upgrade.upgrade_file_uri}
     upgrade_type: patch
-    upgrade_file_url: "{{ upgrade_file_uri | default('${upgrade_file_uri}') }}"
+    upgrade_file_url: "{{ upgrade_file_uri }}"
     upgrade_file_location: "{{ upgrade_file_path | default('/tmp/controller.pkg') }}"
     avi_credentials:
         controller: "{{ controller_ip[0] }}"

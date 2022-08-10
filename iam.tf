@@ -9,6 +9,7 @@ resource "azuread_application" "avi" {
 resource "azuread_service_principal" "avi" {
   count          = var.create_iam ? 1 : 0
   application_id = azuread_application.avi[0].application_id
+  owners         = [data.azuread_client_config.current.object_id]
 }
 resource "azuread_application_password" "avi" {
   count                 = var.create_iam ? 1 : 0
