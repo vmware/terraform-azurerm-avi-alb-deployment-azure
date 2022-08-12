@@ -243,22 +243,24 @@
             duration: "60"
             enabled: true
       register: gslb_se_group
-      - name: Create User for GSLB
-        avi_user:
-          avi_credentials: "{{ avi_credentials }}"
-          default_tenant_ref: "/api/tenant?name=admin"
-          state: present
-          name: "{{ gslb_user }}"
-          access:
-            - all_tenants: true
-              role_ref: "/api/role?name=System-Admin"
-          email: "{{ user_email | default(omit) }}"
-          user_profile_ref: "/api/useraccountprofile?name=No-Lockout-User-Account-Profile"
-          is_superuser: false
-          obj_password: "{{ password }}"
-          obj_username: "{{ gslb_user }}"
-%{ endif }
+
+    - name: Create User for GSLB
+      avi_user:
+        avi_credentials: "{{ avi_credentials }}"
+        default_tenant_ref: "/api/tenant?name=admin"
+        state: present
+        name: "{{ gslb_user }}"
+        access:
+          - all_tenants: true
+            role_ref: "/api/role?name=System-Admin"
+        email: "{{ user_email | default(omit) }}"
+        user_profile_ref: "/api/useraccountprofile?name=No-Lockout-User-Account-Profile"
+        is_superuser: false
+        obj_password: "{{ password }}"
+        obj_username: "{{ gslb_user }}"
+%{ endif ~}
 %{ if configure_dns_vs ~}
+
     - name: DNS VS Config | Get Subnet Information
       avi_api_session:
         avi_credentials: "{{ avi_credentials }}"

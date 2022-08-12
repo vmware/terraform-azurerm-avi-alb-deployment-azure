@@ -214,7 +214,7 @@ variable "additional_gslb_sites" {
 variable "create_gslb_se_group" {
   description = "Create a SE group for GSLB. This option only applies when configure_gslb is set to true"
   type        = bool
-  default     = "true"
+  default     = "false"
 }
 variable "se_ha_mode" {
   description = "The HA mode of the Service Engine Group. Possible values active/active, n+m, or active/standby"
