@@ -109,12 +109,12 @@ variable "create_iam" {
 variable "controller_default_password" {
   description = "This is the default password for the AVI controller image and can be found in the image download page."
   type        = string
-  sensitive   = true
+  sensitive   = false
 }
 variable "controller_password" {
   description = "The password that will be used authenticating with the AVI Controller. This password be a minimum of 8 characters and contain at least one each of uppercase, lowercase, numbers, and special characters"
   type        = string
-  sensitive   = true
+  sensitive   = false
   validation {
     condition     = length(var.controller_password) > 7
     error_message = "The controller_password value must be more than 8 characters and contain at least one each of uppercase, lowercase, numbers, and special characters."
@@ -123,13 +123,13 @@ variable "controller_password" {
 variable "controller_az_app_id" {
   description = "If the create_iam variable is set to false, this is the Azure Application ID that the Avi Controller will use to create Azure resources"
   type        = string
-  sensitive   = true
+  sensitive   = false
   default     = null
 }
 variable "controller_az_client_secret" {
   description = "If the create_iam variable is set to false, this is the Azure Client Secret that the Avi Controller will use to create Azure resources"
   type        = string
-  sensitive   = true
+  sensitive   = false
   default     = null
 }
 variable "controller_vm_size" {
@@ -202,12 +202,12 @@ variable "gslb_domains" {
   default     = [""]
 }
 variable "configure_gslb_additional_sites" {
-  description = "Configure Additional GSLB Sites. The additional_gslb_sites, gslb_site_name, gslb_domains, and configure_dns_vs variables must also be set. Optionally the additional_gslb_sites variable can be used to add active GSLB sites"
+  description = "Configure additional GSLB Sites. The additional_gslb_sites, gslb_site_name, gslb_domains, and configure_dns_vs variables must also be set"
   type        = bool
   default     = "false"
 }
 variable "additional_gslb_sites" {
-  description = "The Names and IP addresses of the GSLB Sites that will be configured. If the Site is a controller cluster the ip_address_list should have the ip address of each controller."
+  description = "The Names and IP addresses of the GSLB Sites that will be configured. If the Site is a controller cluster the ip_address_list should have the ip address of each controller. The configure_gslb_additional_sites variable must also be set to true for the sites to be added"
   type        = list(object({ name = string, ip_address_list = list(string), dns_vs_name = string }))
   default     = [{ name = "", ip_address_list = [""], dns_vs_name = "DNS-VS" }]
 }
@@ -242,7 +242,7 @@ variable "ntp_servers" {
 }
 variable "email_config" {
   description = "The Email settings that will be used for sending password reset information or for trigged alerts. The default setting will send emails directly from the Avi Controller"
-  sensitive   = true
+  sensitive   = false
   type        = object({ smtp_type = string, from_email = string, mail_server_name = string, mail_server_port = string, auth_username = string, auth_password = string })
   default     = { smtp_type = "SMTP_LOCAL_HOST", from_email = "admin@avicontroller.net", mail_server_name = "localhost", mail_server_port = "25", auth_username = "", auth_password = "" }
 }

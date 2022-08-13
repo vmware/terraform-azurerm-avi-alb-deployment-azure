@@ -23,6 +23,9 @@
     name_prefix: ${name_prefix}
     register_controller:
       ${ indent(6, yamlencode(register_controller))}
+%{ if configure_gslb || create_gslb_se_group ~}
+    gslb_site_name: ${gslb_site_name}
+%{ endif ~}
   tasks:
 %{ if controller_ha ~}
     - name: Ensure Avi Cluster is ready

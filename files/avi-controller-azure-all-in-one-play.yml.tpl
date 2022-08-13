@@ -56,7 +56,7 @@
     gslb_site_name: ${gslb_site_name}
     gslb_user: "gslb-admin"
 %{ endif ~}
-%{ if configure_gslb ~}
+%{ if configure_gslb_additional_sites ~}
     additional_gslb_sites:
       ${ indent(6, yamlencode(additional_gslb_sites))}
 %{ endif ~}

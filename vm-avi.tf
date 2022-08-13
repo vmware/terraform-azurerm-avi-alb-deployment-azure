@@ -137,16 +137,16 @@ resource "null_resource" "ansible_provisioner" {
   }
   provisioner "remote-exec" {
     inline = var.create_iam ? [
-      "ansible-playbook avi-controller-azure-all-in-one-play.yml -e password=${var.controller_password} -e azure_app_id=\"${azuread_application.avi[0].application_id}\" -e azure_auth_token=\"${azuread_application_password.avi[0].value}\" -e azure_tenant_id=\"${data.azurerm_subscription.current.tenant_id}\"  > ansible-playbook.log 2> ansible-error.log",
+      "ansible-playbook avi-controller-azure-all-in-one-play.yml -e password=${var.controller_password} -e azure_app_id=\"${azuread_application.avi[0].application_id}\" -e azure_auth_token=\"${azuread_application_password.avi[0].value}\" -e azure_tenant_id=\"${data.azurerm_subscription.current.tenant_id}\"  2> ansible-error.log | tee ansible-playbook.log",
       "echo Controller Configuration Completed"
       ] : [
-      "ansible-playbook avi-controller-azure-all-in-one-play.yml -e password=${var.controller_password} -e azure_app_id=\"${var.controller_az_app_id}\" -e azure_auth_token=\"${var.controller_az_client_secret}\" -e azure_tenant_id=\"${data.azurerm_subscription.current.tenant_id}\"  > ansible-playbook.log 2> ansible-error.log",
+      "ansible-playbook avi-controller-azure-all-in-one-play.yml -e password=${var.controller_password} -e azure_app_id=\"${var.controller_az_app_id}\" -e azure_auth_token=\"${var.controller_az_client_secret}\" -e azure_tenant_id=\"${data.azurerm_subscription.current.tenant_id}\"  2> ansible-error.log | tee ansible-playbook.log",
       "echo Controller Configuration Completed"
     ]
   }
   provisioner "remote-exec" {
     inline = var.avi_upgrade["enabled"] ? [
-      "ansible-playbook avi-upgrade.yml -e password=${var.controller_password} -e upgrade_type=${var.avi_upgrade["upgrade_type"]} >> ansible-playbook.log 2>> ansible-error.log",
+      "ansible-playbook avi-upgrade.yml -e password=${var.controller_password} -e upgrade_type=${var.avi_upgrade["upgrade_type"]} 2>> ansible-error.log | tee -a ansible-playbook.log",
       "echo Avi upgrade completed"
     ] : ["echo Avi upgrade skipped"]
   }
