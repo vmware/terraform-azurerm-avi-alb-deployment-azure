@@ -56,6 +56,12 @@ variable "controller_ha" {
   type        = bool
   default     = "false"
 }
+variable "register_controller" {
+  description = "If enabled is set to true the controller will be registered and licensed with Avi Cloud Services. The Long Organization ID (organization_id) can be found from https://console.cloud.vmware.com/csp/gateway/portal/#/organization/info. The jwt_token can be retrieved at https://portal.avipulse.vmware.com/portal/controller/auth/cspctrllogin"
+  sensitive   = false
+  type        = object({ enabled = bool, jwt_token = string, email = string, organization_id = string })
+  default     = { enabled = "false", jwt_token = "", email = "", organization_id = "" }
+}
 variable "create_networking" {
   description = "This variable controls the VNET and subnet creation for the AVI Controller. When set to false the custom_controller_resource_group, custom_vnet_name and custom_subnet_name variables must be configured."
   type        = bool
@@ -161,7 +167,7 @@ variable "custom_tags" {
   type        = map(string)
   default     = {}
 }
-variable "configure_cloud" {
+variable "configure_controller" {
   description = "Configure the Avi Cloud via Ansible after controller deployment. If not set to true this must be done manually with the desired config"
   type        = bool
   default     = "true"
@@ -190,6 +196,11 @@ variable "configure_gslb" {
   description = "Configure GSLB. The gslb_site_name, gslb_domains, and configure_dns_vs variables must also be set. Optionally the additional_gslb_sites variable can be used to add active GSLB sites"
   type        = bool
   default     = "false"
+}
+variable "gslb_se_size" {
+  description = "The VM size for the AVI Service Engines used for GSLB. This value can be changed in the Service Engine Group configuration after deployment."
+  type        = string
+  default     = "Standard_F2s"
 }
 variable "gslb_site_name" {
   description = "The name of the GSLB site the deployed Controller(s) will be a member of."
