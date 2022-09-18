@@ -44,7 +44,7 @@ locals {
     },
     "21.1" = {
       "plan"        = "nsx-alb-controller-2101"
-      "api_version" = "21.1.1"
+      "api_version" = "21.1.4"
     }
   }
   region                          = lower(replace(var.region, " ", ""))
@@ -106,6 +106,7 @@ resource "azurerm_linux_virtual_machine" "avi_controller" {
   }
   depends_on = [
     azurerm_marketplace_agreement.avi,
+    azurerm_network_interface_security_group_association.controller
   ]
 }
 resource "null_resource" "ansible_provisioner" {

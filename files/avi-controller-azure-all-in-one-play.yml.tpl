@@ -604,9 +604,9 @@
 %{ if avi_upgrade.enabled || register_controller.enabled  ~}
     - name: Verify Cluster State if avi_upgrade or register_controller plays will be ran
       block:
-        - name: Pause for 7 minutes for Cluster to form
+        - name: Pause for 8 minutes for Cluster to form
           ansible.builtin.pause:
-            minutes: 7
+            minutes: 8
         
         - name: Wait for Avi Cluster to be ready
           avi_api_session:
