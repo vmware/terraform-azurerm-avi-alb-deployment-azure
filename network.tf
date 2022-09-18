@@ -22,6 +22,7 @@ resource "azurerm_public_ip" "avi" {
   location            = var.region
   allocation_method   = "Static"
   zones               = local.zones ? [count.index + 1] : null
+  sku                 = local.zones ? "Standard" : "Basic"
 }
 resource "azurerm_network_interface" "avi" {
   count               = var.controller_ha ? 3 : 1

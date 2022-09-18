@@ -296,9 +296,9 @@
             data:
               east_west_placement: false
               cloud_ref: "/api/cloud?name={{ cloud_name }}"
-    %{ if configure_gslb || create_gslb_se_group ~}
+%{ if configure_gslb || create_gslb_se_group ~}
               se_group_ref: "{{ gslb_se_group.obj.url }}"
-    %{ endif ~}
+%{ endif ~}
               vip:
               - enabled: true
                 vip_id: 0      
@@ -379,9 +379,9 @@
               application_profile_ref: /api/applicationprofile?name=System-DNS
               network_profile_ref: /api/networkprofile?name=System-UDP-Per-Pkt
               analytics_profile_ref: /api/analyticsprofile?name=System-Analytics-Profile
-              %{ if configure_gslb || create_gslb_se_group }
+%{ if configure_gslb || create_gslb_se_group ~}
               se_group_ref: "{{ gslb_se_group.obj.url }}"
-              %{ endif}
+%{ endif ~}
               cloud_ref: "{{ avi_cloud.obj.url }}"
               services:
               - port: 53
@@ -426,12 +426,12 @@
                 ip_addresses:
                   - type: "V4"
                     addr: "{{ controller_ip[0] }}"
-    %{ if controller_ha ~}
+%{ if controller_ha ~}
                   - type: "V4"
                     addr: "{{ controller_ip[1] }}"
                   - type: "V4"
                     addr: "{{ controller_ip[2] }}"
-    %{ endif ~}
+%{ endif ~}
                 enabled: True
                 member_type: "GSLB_ACTIVE_MEMBER"
                 port: 443
@@ -439,9 +439,9 @@
                   - dns_vs_uuid: "{{ dns_vs.obj.uuid }}"
                 cluster_uuid: "{{ cluster.obj.uuid }}"
             dns_configs:
-              %{ for domain in gslb_domains }
+%{ for domain in gslb_domains ~}
               - domain_name: "${domain}"
-              %{ endfor }
+%{ endfor ~}
             leader_cluster_uuid: "{{ cluster.obj.uuid }}"
           register: gslb_results
         - name: Display gslb_results
