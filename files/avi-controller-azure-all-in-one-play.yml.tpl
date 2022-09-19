@@ -287,6 +287,11 @@
             http_method: get
             path: "vimgrnwruntime?name={{ dns_vs_settings.subnet_name }}"
           register: dns_vs_subnet
+        
+        - name: Display dns_vs_subnet
+          ansible.builtin.debug:
+            var: dns_vs_subnet
+
         - name: Create DNS VSVIP
           avi_api_session:
             avi_credentials: "{{ avi_credentials }}"
@@ -404,6 +409,7 @@
 %{ endfor ~}
             leader_cluster_uuid: "{{ cluster.obj.uuid }}"
           register: gslb_results
+
         - name: Display gslb_results
           ansible.builtin.debug:
             var: gslb_results
@@ -457,6 +463,9 @@
               ip_addresses:
                 - type: "V4"
                   addr: "${site.ip_address_list[0]}"
+          until: gslb_verify is not failed
+          retries: 60
+          delay: 10
           register: gslb_verify
           
         - name: Display GSLB Siteops Verify
