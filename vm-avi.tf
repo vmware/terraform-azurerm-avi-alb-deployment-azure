@@ -45,6 +45,10 @@ locals {
     "21.1" = {
       "plan"        = "nsx-alb-controller-2101"
       "api_version" = "21.1.4"
+    },
+    "22.1" = {
+      "plan"        = "nsx-alb-controller-2201"
+      "api_version" = "22.1.1"
     }
   }
   region                          = lower(replace(var.region, " ", ""))

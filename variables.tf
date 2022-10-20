@@ -33,13 +33,13 @@ variable "custom_controller_resource_group" {
   default     = ""
 }
 variable "avi_version" {
-  description = "The major and minor version of the AVI Controller version that will be deployed. 18.2, 20.1, or 21.1 are valid values."
+  description = "The major and minor version of the AVI Controller version that will be deployed. 20.1, 21.1, or 22.1 are valid values."
   type        = string
   validation {
-    condition     = var.avi_version == "18.2" || var.avi_version == "20.1" || var.avi_version == "21.1"
-    error_message = "The avi_version value must be one of 18.2, 20.1, or 21.1."
+    condition     = var.avi_version == "20.1" || var.avi_version == "21.1" || var.avi_version == "22.1"
+    error_message = "The avi_version value must be one of 20.1, 21.1, or 22.1."
   }
-  default = "20.1"
+  default = "21.1"
 }
 variable "avi_upgrade" {
   description = "This variable determines if a patch upgrade is performed after install. The enabled key should be set to true and the url from the Avi Cloud Services portal for the should be set for the upgrade_file_uri key. Valid upgrade_type values are patch or system"
