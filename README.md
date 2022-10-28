@@ -32,6 +32,18 @@ The following are Azure prerequisites for running this module:
 ## Azure Provider
 For authenticating to the Azure Provider the instructions found here should be followed - https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs
 
+The azurerm provider block may need to be configured for setting addtional settings depending on the environment. The settings as shown in the example below have been tested sucessfully:
+
+```hcl
+provider "azurerm" {
+  features {
+    resource_group {
+      prevent_deletion_if_contains_resources = false
+    }
+  }
+  skip_provider_registration = "true"
+}
+```
 ## Avi Controller Image
 This module will use the Azure Marketplace for deploying the Avi image. The terms of the image and more information can be found in this link - https://azuremarketplace.microsoft.com/en-us/marketplace/apps/avi-networks.avi-vantage-adc. By default the marketplace agreement is accepted with the create_marketplace_agreement variable. 
 
@@ -45,6 +57,14 @@ This is an example of an HA controller deployment that creates the controller an
 terraform {
   backend "local" {
   }
+}
+provider "azurerm" {
+  features {
+    resource_group {
+      prevent_deletion_if_contains_resources = false
+    }
+  }
+  skip_provider_registration = "true"
 }
 module "avi_controller_azure" {
   source  = "vmware/avi-alb-deployment-azure/azurerm"
@@ -75,8 +95,8 @@ terraform {
   }
 }
 module "avi_controller_azure_westus2" {
-  source  = "vmware/avi-alb-deployment-azure/azurerm"
-  version = "1.0.x"
+  source    = "vmware/avi-alb-deployment-azure/azurerm"
+  version   = "1.0.x"
 
   region                       = "westus2"
   name_prefix                  = "companyname"
