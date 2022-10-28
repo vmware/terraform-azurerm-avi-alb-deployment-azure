@@ -1,41 +1,31 @@
 locals {
   cloud_settings = {
-    subscription_id                 = data.azurerm_subscription.current.subscription_id
-    se_mgmt_subnet_name             = var.create_networking ? azurerm_subnet.avi[0].name : data.azurerm_subnet.custom[0].name
-    se_vnet_id_path                 = var.create_networking ? azurerm_virtual_network.avi[0].id : data.azurerm_virtual_network.custom[0].id
-    controller_public_address       = var.controller_public_address
-    avi_version                     = local.avi_info[var.avi_version]["api_version"]
-    dns_servers                     = var.dns_servers
-    dns_search_domain               = var.dns_search_domain
-    ntp_servers                     = var.ntp_servers
-    email_config                    = var.email_config
-    region                          = local.region
-    se_vm_size                      = var.se_vm_size
-    gslb_se_size                    = var.gslb_se_size
-    use_azure_dns                   = var.use_azure_dns
-    se_resource_group               = var.create_resource_group ? azurerm_resource_group.avi[0].name : var.custom_se_resource_group != null ? var.custom_se_resource_group : var.custom_controller_resource_group
-    name_prefix                     = var.name_prefix
-    controller_ha                   = var.controller_ha
-    register_controller             = var.register_controller
-    controller_ip                   = local.controller_ip
-    controller_names                = local.controller_names
-    use_standard_alb                = var.use_standard_alb
-    configure_dns_profile           = var.configure_dns_profile
-    dns_service_domain              = var.dns_service_domain
-    configure_dns_vs                = var.configure_dns_vs
-    dns_vs_settings                 = local.dns_vs_settings
-    configure_gslb                  = var.configure_gslb
-    configure_gslb_additional_sites = var.configure_gslb_additional_sites
-    gslb_site_name                  = var.gslb_site_name
-    gslb_domains                    = var.gslb_domains
-    additional_gslb_sites           = var.additional_gslb_sites
-    create_gslb_se_group            = var.create_gslb_se_group
-    se_ha_mode                      = var.se_ha_mode
-    avi_upgrade                     = var.avi_upgrade
-  }
-  dns_vs_settings = {
-    subnet_name        = var.create_networking ? azurerm_subnet.avi[0].name : var.custom_subnet_name,
-    allocate_public_ip = var.dns_vs_allocate_public_ip
+    subscription_id           = data.azurerm_subscription.current.subscription_id
+    se_mgmt_subnet_name       = var.create_networking ? azurerm_subnet.avi[0].name : data.azurerm_subnet.custom[0].name
+    se_vnet_id_path           = var.create_networking ? azurerm_virtual_network.avi[0].id : data.azurerm_virtual_network.custom[0].id
+    controller_public_address = var.controller_public_address
+    avi_version               = local.avi_info[var.avi_version]["api_version"]
+    dns_servers               = var.dns_servers
+    dns_search_domain         = var.dns_search_domain
+    ntp_servers               = var.ntp_servers
+    email_config              = var.email_config
+    region                    = local.region
+    se_vm_size                = var.se_vm_size
+    gslb_se_size              = var.gslb_se_size
+    use_azure_dns             = var.use_azure_dns
+    se_resource_group         = var.create_resource_group ? azurerm_resource_group.avi[0].name : var.custom_se_resource_group != null ? var.custom_se_resource_group : var.custom_controller_resource_group
+    name_prefix               = var.name_prefix
+    controller_ha             = var.controller_ha
+    register_controller       = var.register_controller
+    controller_ip             = local.controller_ip
+    controller_names          = local.controller_names
+    use_standard_alb          = var.use_standard_alb
+    configure_dns_profile     = var.configure_dns_profile
+    configure_dns_vs          = var.configure_dns_vs
+    configure_gslb            = var.configure_gslb
+    create_gslb_se_group      = var.create_gslb_se_group
+    se_ha_mode                = var.se_ha_mode
+    avi_upgrade               = var.avi_upgrade
   }
   avi_info = {
     "20.1" = {
