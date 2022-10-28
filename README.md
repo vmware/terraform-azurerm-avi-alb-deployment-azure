@@ -197,7 +197,7 @@ The terraform-azurerm-avi-alb-deployment-azure project team welcomes contributio
 
 | Name | Version |
 |------|---------|
-| <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 0.13.6 |
+| <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.3.0 |
 | <a name="requirement_azuread"></a> [azuread](#requirement\_azuread) | ~> 2.26.1 |
 | <a name="requirement_azurerm"></a> [azurerm](#requirement\_azurerm) | ~> 3.14.0 |
 | <a name="requirement_null"></a> [null](#requirement\_null) | ~> 3.1.1 |
