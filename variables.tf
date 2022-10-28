@@ -192,8 +192,8 @@ variable "configure_dns_profile" {
 }
 variable "configure_dns_vs" {
   description = "Create Avi DNS Virtual Service. The subnet_name parameter must be an existing AWS Subnet. If the allocate_public_ip parameter is set to true a EIP will be allocated for the VS. The VS IP address will automatically be allocated via the AWS IPAM"
-  type        = object({ enabled = bool, subnet_name = string, allocate_public_ip = bool })
-  default     = { enabled = "false", subnet_name = "", allocate_public_ip = "false" }
+  type        = object({ enabled = bool, allocate_public_ip = bool })
+  default     = { enabled = "false", allocate_public_ip = "false" }
 }
 variable "configure_gslb" {
   description = "Configures GSLB. The gslb_site_name parameter is the name of the GSLB site the deployed Controller(s) will be a member of. The gslb_domains parameter is a list of GSLB domains that will be configured. In addition to this variable the configure_dns_vs variable must also be set. Optionally the additional_gslb_sites parameter can be used to add additional active GSLB sites"

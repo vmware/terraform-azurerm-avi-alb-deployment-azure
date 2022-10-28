@@ -21,11 +21,15 @@ locals {
     controller_names          = local.controller_names
     use_standard_alb          = var.use_standard_alb
     configure_dns_profile     = var.configure_dns_profile
-    configure_dns_vs          = var.configure_dns_vs
+    configure_dns_vs          = local.configure_dns_vs
     configure_gslb            = var.configure_gslb
     create_gslb_se_group      = var.create_gslb_se_group
     se_ha_mode                = var.se_ha_mode
     avi_upgrade               = var.avi_upgrade
+  }
+  configure_dns_vs = merge(var.configure_dns_vs, local.dns_vs_subnet)
+  dns_vs_subnet = {
+    subnet_name = var.create_networking ? azurerm_subnet.avi[0].name : var.custom_subnet_name,
   }
   avi_info = {
     "20.1" = {
