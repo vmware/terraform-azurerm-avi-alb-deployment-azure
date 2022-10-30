@@ -1,4 +1,4 @@
-# AVI Controller Deployment on Azure Terraform module
+# NSX ALB - AVI Controller Deployment on Azure Terraform module
 This Terraform module creates and configures an AVI (NSX Advanced Load Balancer) Controller on Azure
 [![Avi - Single Site Deployment](https://github.com/vmware/terraform-azurerm-avi-alb-deployment-azure/actions/workflows/single-site-test.yml/badge.svg)](https://github.com/vmware/terraform-azurerm-avi-alb-deployment-azure/actions/workflows/single-site-test.yml)
 [![Avi - 2 Site GSLB Deployment](https://github.com/vmware/terraform-azurerm-avi-alb-controller-azure/actions/workflows/dual-site-gslb-test.yml/badge.svg)](https://github.com/vmware/terraform-azurerm-avi-alb-deployment-azure/actions/workflows/dual-site-gslb-test.yml)
@@ -18,9 +18,9 @@ During the creation of the Controller instance the following initialization step
 * Run Ansible playbook to configure initial settings and Azure Full Access Cloud
 
 The Ansible playbook can optionally add these configurations:
-* Create Avi DNS Profile (configured with configure_dns_profile and dns_service_domain variables)
-* Create Avi DNS Virtual Service (configured with configure_dns_vs and dns_vs_settings variables)
-* Configure GSLB (configured with configure_gslb, gslb_site_name, gslb_domains, and configure_gslb_additional_sites variables)
+* Create DNS Profile (configured with the configure_dns_profile variable)
+* Create Avi DNS Virtual Service (configured with the configure_dns_vs variable)
+* Configure GSLB (configured with the configure_gslb variable)
 
 # Environment Requirements
 
@@ -87,7 +87,20 @@ output "controller_info" {
   value = module.avi_controller_azure.controllers
 }
 ```
-## GSLB Deployment Example
+## GSLB Deployment
+For GSLB to be configured successfully the configure_gslb and configure_dns_vs variables must be configured. By default a new Service Engine Group (g-dns) and user (gslb-admin) will be created for the configuration. 
+
+The following is a description of the configure_gslb variable parameters and their usage:
+| Parameter   | Description | Type |
+| ----------- | ----------- | ----------- |
+| enabled      | Must be set to "true" for Active GSLB sites | bool
+| leader      | Must be set to "true" for only one GSLB site that will be the leader | bool
+| site_name   | Name of the GSLB site   | string
+| domains   | List of GSLB domains that will be configured | list(string)
+| create_se_group | Determines whether a g-dns SE group will be created        | bool
+| se_size   | The Azure VM Size used for the Avi Service Engines | string
+| additional_sites   | Additional sites that will be configured. This parameter should only be set for the primary GSLB site | string
+
 The example below shows a GSLB deployment with 2 regions utilized. VNET Peering is configured (with create_vnet_peering and vnet_peering_settings variables) between the two newly created Avi VNETs so that the controllers can communicate.
 ```hcl
 terraform {
@@ -98,25 +111,23 @@ module "avi_controller_azure_westus2" {
   source    = "vmware/avi-alb-deployment-azure/azurerm"
   version   = "1.0.x"
 
-  region                       = "westus2"
-  name_prefix                  = "companyname"
-  controller_default_password  = "Value Redacted and available within the VMware Customer Portal"
-  controller_password          = "<newpassword>"
-  create_networking            = true
-  create_vnet_peering          = true
-  vnet_peering_settings        = { global_peering = true, resource_group = "rg-<name_prefix>-avi-<region>", vnet_name = "<name_prefix>-avi-vnet-<region>" }
-  create_iam                   = true
-  controller_ha                = true
-  controller_public_address    = true
-  custom_tags                  = { "Role" : "Avi-Controller", "Owner" : "user@email.com", "Department" : "IT" }
-  se_ha_mode                   = "active/active"
-  vnet_address_space           = "10.251.0.0/16"
-  avi_subnet                   = "10.251.0.0/24"
-  configure_dns_profile        = "true"
-  dns_service_domain           = "west2.avidemo.net"
-  configure_dns_vs             = "true"
-  create_gslb_se_group        = "true"
-  gslb_site_name              = "West2"
+  region                      = "westus2"
+  name_prefix                 = "companyname"
+  controller_default_password = "Value Redacted and available within the VMware Customer Portal"
+  controller_password         = "<newpassword>"
+  create_networking           = true
+  create_vnet_peering         = true
+  vnet_peering_settings       = { global_peering = true, resource_group = "rg-<name_prefix>-avi-<region>", vnet_name = "<name_prefix>-avi-vnet-<region>" }
+  create_iam                  = true
+  controller_ha               = true
+  controller_public_address   = true
+  custom_tags                 = { "Role" : "Avi-Controller", "Owner" : "user@email.com", "Department" : "IT" }
+  se_ha_mode                  = "active/active"
+  vnet_address_space          = "10.251.0.0/16"
+  avi_subnet                  = "10.251.0.0/24"
+  configure_dns_profile       = { "enabled" = "true", usable_domains = ["west2.avidemo.net"] }
+  configure_dns_vs            = { "enabled" = "true", allocate_public_ip = "false" }
+  configure_gslb              = {"enabled = "true", site_name = "West2" }
 }
 module "avi_controller_azure_eastus2" {
   source  = "vmware/avi-alb-deployment-azure/azurerm"
@@ -136,14 +147,9 @@ module "avi_controller_azure_eastus2" {
   se_ha_mode                      = "active/active"
   vnet_address_space              = "10.252.0.0/16"
   avi_subnet                      = "10.252.0.0/24"
-  configure_dns_profile           = "true"
-  dns_service_domain              = "east2.avidemo.net"
-  configure_dns_vs                = "true"
-  configure_gslb                  = "true"
-  gslb_site_name                  = "East2"
-  gslb_domains                    = ["gslb.avidemo.net"]
-  configure_gslb_additional_sites = "true"
-  additional_gslb_sites           = [{name = "West2", ip_address_list = module.avi_controller_azure_westus2.controllers[*].private_ip_address, dns_vs_name = "DNS-VS"}]
+  configure_dns_profile       = { "enabled" = "true", usable_domains = ["east2.avidemo.net"] }
+  configure_dns_vs            = { "enabled" = "true", allocate_public_ip = "false" }
+  configure_gslb              = {"enabled = "true", leader = "true", site_name = "East2", domains = ["gslb.avidemo.net"], additional_sites = [{name = "West2", ip_address_list = module.avi_controller_azure_westus2.controllers[*].private_ip_address, dns_vs_name = "DNS-VS"}] }
 }
 output "eastus2_controller_info" {
   value = module.avi_controller_azure_eastus2.controllers
@@ -254,7 +260,7 @@ No modules.
 | <a name="input_configure_controller"></a> [configure\_controller](#input\_configure\_controller) | Configure the Avi Cloud via Ansible after controller deployment. If not set to true this must be done manually with the desired config | `bool` | `"true"` | no |
 | <a name="input_configure_dns_profile"></a> [configure\_dns\_profile](#input\_configure\_dns\_profile) | Configure a DNS Profile for DNS Record Creation for Virtual Services. The usable\_domains is a list of domains that Avi will be the Authoritative Nameserver for and NS records may need to be created pointing to the Avi Service Engine addresses. Supported profiles for the type parameter are AWS or AVI | <pre>object({<br>    enabled        = bool,<br>    type           = string,<br>    usable_domains = list(string),<br>    ttl            = optional(string),<br>    aws_profile    = optional(object({ iam_assume_role = string, region = string, vpc_id = string, access_key_id = string, secret_access_key = string }))<br>  })</pre> | <pre>{<br>  "enabled": false,<br>  "ttl": "30",<br>  "type": "AVI",<br>  "usable_domains": []<br>}</pre> | no |
 | <a name="input_configure_dns_vs"></a> [configure\_dns\_vs](#input\_configure\_dns\_vs) | Create Avi DNS Virtual Service. The subnet\_name parameter must be an existing AWS Subnet. If the allocate\_public\_ip parameter is set to true a EIP will be allocated for the VS. The VS IP address will automatically be allocated via the AWS IPAM | `object({ enabled = bool, allocate_public_ip = bool })` | <pre>{<br>  "allocate_public_ip": "false",<br>  "enabled": "false"<br>}</pre> | no |
-| <a name="input_configure_gslb"></a> [configure\_gslb](#input\_configure\_gslb) | Configures GSLB. The gslb\_site\_name parameter is the name of the GSLB site the deployed Controller(s) will be a member of. The gslb\_domains parameter is a list of GSLB domains that will be configured. In addition to this variable the configure\_dns\_vs variable must also be set. Optionally the additional\_gslb\_sites parameter can be used to add additional active GSLB sites | <pre>object({<br>    enabled          = bool,<br>    site_name        = string,<br>    domains          = optional(list(string)),<br>    additional_sites = optional(list(object({ name = string, ip_address_list = list(string) }))),<br>  })</pre> | <pre>{<br>  "domains": [<br>    ""<br>  ],<br>  "enabled": "false",<br>  "site_name": ""<br>}</pre> | no |
+| <a name="input_configure_gslb"></a> [configure\_gslb](#input\_configure\_gslb) | Configures GSLB. In addition the configure\_dns\_vs variable must also be set for GSLB to be configured. See the GSLB Deployment README section for more information. | <pre>object({<br>    enabled          = bool,<br>    leader           = optional(bool),<br>    site_name        = string,<br>    domains          = optional(list(string)),<br>    create_se_group  = optional(bool),<br>    se_size          = optional(string),<br>    additional_sites = optional(list(object({ name = string, ip_address_list = list(string) })))<br>  })</pre> | <pre>{<br>  "create_se_group": "true",<br>  "domains": [<br>    ""<br>  ],<br>  "enabled": "false",<br>  "leader": "false",<br>  "se_size": "Standard_F2s",<br>  "site_name": ""<br>}</pre> | no |
 | <a name="input_controller_az_app_id"></a> [controller\_az\_app\_id](#input\_controller\_az\_app\_id) | If the create\_iam variable is set to false, this is the Azure Application ID that the Avi Controller will use to create Azure resources | `string` | `null` | no |
 | <a name="input_controller_az_client_secret"></a> [controller\_az\_client\_secret](#input\_controller\_az\_client\_secret) | If the create\_iam variable is set to false, this is the Azure Client Secret that the Avi Controller will use to create Azure resources | `string` | `null` | no |
 | <a name="input_controller_default_password"></a> [controller\_default\_password](#input\_controller\_default\_password) | This is the default password for the AVI controller image and can be found in the image download page. | `string` | n/a | yes |
@@ -265,7 +271,6 @@ No modules.
 | <a name="input_controller_public_address"></a> [controller\_public\_address](#input\_controller\_public\_address) | This variable controls if the Controller has a Public IP Address. When set to false the Ansible provisioner will connect to the private IP of the Controller. | `bool` | `"false"` | no |
 | <a name="input_controller_vm_size"></a> [controller\_vm\_size](#input\_controller\_vm\_size) | The VM size for the AVI Controller | `string` | `"Standard_D8s_v3"` | no |
 | <a name="input_create_firewall_rules"></a> [create\_firewall\_rules](#input\_create\_firewall\_rules) | This variable controls the Network Security Group (NSG) rule creation for the Avi Controllers. When set to false the necessary firewall rules must be in place before the deployment | `bool` | `"true"` | no |
-| <a name="input_create_gslb_se_group"></a> [create\_gslb\_se\_group](#input\_create\_gslb\_se\_group) | Create a SE group for GSLB. The site\_name parameter of the configure\_gslb variable must also be configured. This variable should be set to true for the follower GSLB sites. When configure\_gslb is set to true a SE group will be created automatically | `bool` | `"false"` | no |
 | <a name="input_create_iam"></a> [create\_iam](#input\_create\_iam) | Create Azure AD Application and Service Principal, Controller Custom Role, and Application Role Binding for Avi Azure Full Access Cloud | `bool` | `"false"` | no |
 | <a name="input_create_marketplace_agreement"></a> [create\_marketplace\_agreement](#input\_create\_marketplace\_agreement) | If set to true the user agrees to the terms and conditions for the Avi Marketplace image as found here https://azuremarketplace.microsoft.com/en-us/marketplace/apps/avi-networks.avi-vantage-adc. When multiple instances of this module are used only 1 should have this value set to true to prevent duplicate deployments | `bool` | `"true"` | no |
 | <a name="input_create_networking"></a> [create\_networking](#input\_create\_networking) | This variable controls the VNET and subnet creation for the AVI Controller. When set to false the custom\_controller\_resource\_group, custom\_vnet\_name and custom\_subnet\_name variables must be configured. | `bool` | `"true"` | no |
@@ -279,7 +284,6 @@ No modules.
 | <a name="input_dns_search_domain"></a> [dns\_search\_domain](#input\_dns\_search\_domain) | The optional DNS search domain that will be used by the controller | `string` | `null` | no |
 | <a name="input_dns_servers"></a> [dns\_servers](#input\_dns\_servers) | The optional DNS servers that will be used for local DNS resolution by the controller. The dns\_search\_domain variable must also be specified if this variable is set. Example ["8.8.4.4", "8.8.8.8"] | `list(string)` | `null` | no |
 | <a name="input_email_config"></a> [email\_config](#input\_email\_config) | The Email settings that will be used for sending password reset information or for trigged alerts. The default setting will send emails directly from the Avi Controller | `object({ smtp_type = string, from_email = string, mail_server_name = string, mail_server_port = string, auth_username = string, auth_password = string })` | <pre>{<br>  "auth_password": "",<br>  "auth_username": "",<br>  "from_email": "admin@avicontroller.net",<br>  "mail_server_name": "localhost",<br>  "mail_server_port": "25",<br>  "smtp_type": "SMTP_LOCAL_HOST"<br>}</pre> | no |
-| <a name="input_gslb_se_size"></a> [gslb\_se\_size](#input\_gslb\_se\_size) | The VM size for the AVI Service Engines used for GSLB. This value can be changed in the Service Engine Group configuration after deployment. | `string` | `"Standard_F2s"` | no |
 | <a name="input_name_prefix"></a> [name\_prefix](#input\_name\_prefix) | This prefix is appended to the names of the Controller and SEs | `string` | n/a | yes |
 | <a name="input_ntp_servers"></a> [ntp\_servers](#input\_ntp\_servers) | The NTP Servers that the Avi Controllers will use. The server should be a valid IP address (v4 or v6) or a DNS name. Valid options for type are V4, DNS, or V6 | `list(object({ addr = string, type = string }))` | <pre>[<br>  {<br>    "addr": "0.us.pool.ntp.org",<br>    "type": "DNS"<br>  },<br>  {<br>    "addr": "1.us.pool.ntp.org",<br>    "type": "DNS"<br>  },<br>  {<br>    "addr": "2.us.pool.ntp.org",<br>    "type": "DNS"<br>  },<br>  {<br>    "addr": "3.us.pool.ntp.org",<br>    "type": "DNS"<br>  }<br>]</pre> | no |
 | <a name="input_region"></a> [region](#input\_region) | The Region that the AVI controller and SEs will be deployed to | `string` | n/a | yes |

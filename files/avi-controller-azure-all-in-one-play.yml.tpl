@@ -54,9 +54,7 @@
       ${ indent(6, yamlencode(configure_dns_vs))}
     configure_gslb:
       ${ indent(6, yamlencode(configure_gslb))}
-    create_gslb_se_group: ${create_gslb_se_group}
     gslb_user: "gslb-admin"
-    gslb_se_size: ${gslb_se_size}
 %{ if avi_upgrade.enabled || register_controller.enabled  ~}
     avi_upgrade:
       enabled: ${avi_upgrade.enabled}
@@ -111,6 +109,8 @@
       avi_cloud:
         avi_credentials: "{{ avi_credentials }}"
         state: present
+        avi_api_update_method: patch
+        avi_api_patch_op: replace
         name: "{{ cloud_name }}"
         vtype: CLOUD_AZURE
         dhcp_enabled: true
@@ -129,6 +129,8 @@
           use_standard_alb: "{{ use_standard_alb }}"
           dhcp_enabled: true
       register: avi_cloud
+      ignore_errors: yes
+
     - name: Set Backup Passphrase
       avi_backupconfiguration:
         avi_credentials: "{{ avi_credentials }}"
@@ -223,15 +225,14 @@
           when: configure_dns_profile.type == "AVI"
         
         - name: Update Cloud Configuration with DNS profile 
-          avi_api_session:
+          avi_cloud:
             avi_credentials: "{{ avi_credentials }}"
-            http_method: patch
-            path: "cloud?name={{ cloud_name }}"
-            data:
-              add:
-                dns_provider_ref: "{{ create_dns_avi.obj.url }}"
+            avi_api_update_method: patch
+            avi_api_patch_op: add
+            name: "{{ cloud_name }}"
+            dns_provider_ref: "{{ create_dns_avi.obj.url }}"
+            vtype: CLOUD_AZURE
           when: configure_dns_profile.type == "AVI"
-          ignore_errors: yes
 
         - name: Create AWS Route53 DNS Profile
           avi_ipamdnsproviderprofile:
@@ -249,15 +250,15 @@
               ttl: "{{ configure_dns_profile.ttl | default('30') }}"
           register: create_dns_aws
           when: configure_dns_profile.type == "AWS" and route53_integration == false
-
-        - name: Update Cloud Configuration with DNS profile 
-          avi_api_session:
+        
+        - name: Update Cloud Configuration with DNS profile
+          avi_cloud:
             avi_credentials: "{{ avi_credentials }}"
-            http_method: patch
-            path: "cloud?name={{ cloud_name }}"
-            data:
-              add:
-                dns_provider_ref: "{{ create_dns_aws.obj.url }}"
+            avi_api_update_method: patch
+            avi_api_patch_op: add
+            name: "{{ cloud_name }}"
+            dns_provider_ref: "{{ create_dns_aws.obj.url }}"
+            vtype: CLOUD_AZURE
           when: configure_dns_profile.type == "AWS" and route53_integration == false
       when: configure_dns_profile.enabled == true
       tags: dns_profile
@@ -278,12 +279,13 @@
             max_se: "4"
             max_vs_per_se: "1"
             extra_shared_config_memory: 2000
-            instance_flavor: "{{ gslb_se_size }}"
+            instance_flavor: "{{ configure_gslb.se_size | default('Standard_F2s') }}"
             se_name_prefix: "{{ name_prefix }}{{ configure_gslb.site_name }}"
             realtime_se_metrics:
               duration: "60"
               enabled: true
           register: gslb_se_group
+          when: configure_gslb.create_se_group == true or configure_gslb.create_se_group == "null"
 
         - name: Create User for GSLB
           avi_user:
@@ -299,7 +301,7 @@
             is_superuser: false
             obj_password: "{{ password }}"
             obj_username: "{{ gslb_user }}"
-      when: configure_gslb.enabled == true or create_gslb_se_group == true
+      when: configure_gslb.enabled == true
       tags: gslb
 
     - name: Configure DNS Virtual Service
@@ -308,7 +310,7 @@
           avi_api_session:
             avi_credentials: "{{ avi_credentials }}"
             http_method: get
-            path: "vimgrnwruntime?name={{ dns_vs_settings.subnet_name }}"
+            path: "vimgrnwruntime?name={{ configure_dns_vs.subnet_name }}"
           register: dns_vs_subnet
         
         - name: Display dns_vs_subnet
@@ -324,9 +326,9 @@
             - enabled: true
               vip_id: 0      
               auto_allocate_ip: "true"
-              auto_allocate_floating_ip: "{{ dns_vs_settings.allocate_public_ip }}"
+              auto_allocate_floating_ip: "{{ configure_dns_vs.allocate_public_ip }}"
               avi_allocated_vip: true
-              avi_allocated_fip: "{{ dns_vs_settings.allocate_public_ip }}"
+              avi_allocated_fip: "{{ configure_dns_vs.allocate_public_ip }}"
               auto_allocate_ip_type: V4_ONLY
               prefix_length: 32
               subnet_uuid: "{{ dns_vs_subnet.obj.results.0.url }}"
@@ -341,7 +343,7 @@
             dns_info:
             - type: DNS_RECORD_A
               algorithm: DNS_RECORD_RESPONSE_CONSISTENT_HASH
-              fqdn: "dns.{{ dns_domain }}"
+              fqdn: "dns.{{ configure_dns_profile.usable_domains.0 }}"
             name: vsvip-DNS-VS-Default-Cloud
           register: vsvip_results
           until: vsvip_results is not failed
@@ -365,7 +367,7 @@
             application_profile_ref: /api/applicationprofile?name=System-DNS
             network_profile_ref: /api/networkprofile?name=System-UDP-Per-Pkt
             analytics_profile_ref: /api/analyticsprofile?name=System-Analytics-Profile
-%{ if configure_gslb.enabled || create_gslb_se_group ~}
+%{ if configure_gslb.enabled && configure_gslb.create_se_group ~}
             se_group_ref: "{{ gslb_se_group.obj.url }}"
 %{ endif ~}
             cloud_ref: "/api/cloud?name={{ cloud_name }}"
@@ -441,8 +443,8 @@
             dns_configs: "{{ gslb_domains }}"
             leader_cluster_uuid: "{{ cluster.obj.uuid }}"
           register: gslb_results
-      when: configure_gslb.enabled == true
-      tags: configure_gslb
+      when: configure_gslb.enabled == true and configure_gslb.leader == true
+      tags: gslb
 
     - name: Configure Additional GSLB Sites
       block:
@@ -452,7 +454,9 @@
         loop_control:
           loop_var: site
       when: configure_gslb.additional_sites != "null"
-      tags: configure_gslb_additional_sites
+      tags:
+        - configure_gslb_additional_sites
+        - gslb
       ignore_errors: yes
 
     - name: Configure Cluster
@@ -489,7 +493,7 @@
                   ip:
                     type: V4
                     addr: "{{ controller_ip[2] }}"
-%{ if configure_gslb.enabled || create_gslb_se_group ~}
+%{ if configure_gslb.enabled ~}
             name: "{{ name_prefix }}-{{ configure_gslb.site_name }}-cluster"
 %{ else ~}
             name: "{{ name_prefix }}-cluster"
@@ -509,23 +513,23 @@
 
         - name: Copy Ansible module file
           ansible.builtin.copy:
-            src: /home/admin/avi_pulse_registration.py
+            src: /home/admin/ansible/avi_pulse_registration.py
             dest: /home/admin/.ansible/collections/ansible_collections/vmware/alb/plugins/modules/avi_pulse_registration.py
         
         - name: Remove unused module file
           ansible.builtin.file:
-            path: /home/admin/avi_pulse_registration.py
+            path: /home/admin/ansible/avi_pulse_registration.py
             state: absent
 
 %{ if split(".", avi_version)[0] == "21" && split(".", avi_version)[2] == "4"  ~}
         - name: Patch file
-          shell: patch --directory /opt/avi/python/bin/portal/api/ < /home/admin/views_albservices.patch
+          shell: patch --directory /opt/avi/python/bin/portal/api/ < /home/admin/ansible/views_albservices.patch
 %{ endif ~}
       tags: register_controller
 
     - name: Remove patch file
       ansible.builtin.file:
-        path: /home/admin/views_albservices.patch
+        path: /home/admin/ansible/views_albservices.patch
         state: absent
 
 %{ if avi_upgrade.enabled || register_controller.enabled  ~}

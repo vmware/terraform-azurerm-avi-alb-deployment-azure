@@ -11,7 +11,6 @@ locals {
     email_config              = var.email_config
     region                    = local.region
     se_vm_size                = var.se_vm_size
-    gslb_se_size              = var.gslb_se_size
     use_azure_dns             = var.use_azure_dns
     se_resource_group         = var.create_resource_group ? azurerm_resource_group.avi[0].name : var.custom_se_resource_group != null ? var.custom_se_resource_group : var.custom_controller_resource_group
     name_prefix               = var.name_prefix
@@ -23,7 +22,6 @@ locals {
     configure_dns_profile     = var.configure_dns_profile
     configure_dns_vs          = local.configure_dns_vs
     configure_gslb            = var.configure_gslb
-    create_gslb_se_group      = var.create_gslb_se_group
     se_ha_mode                = var.se_ha_mode
     avi_upgrade               = var.avi_upgrade
   }
@@ -120,54 +118,67 @@ resource "null_resource" "ansible_provisioner" {
     timeout  = "600s"
     password = var.controller_password
   }
+  provisioner "remote-exec" {
+    inline = ["mkdir ansible"]
+  }
   provisioner "file" {
     source      = "${path.module}/files/avi_pulse_registration.py"
-    destination = "/home/admin/avi_pulse_registration.py"
+    destination = "/home/admin/ansible/avi_pulse_registration.py"
   }
   provisioner "file" {
     source      = "${path.module}/files/views_albservices.patch"
-    destination = "/home/admin/views_albservices.patch"
+    destination = "/home/admin/ansible/views_albservices.patch"
   }
   provisioner "file" {
     content = templatefile("${path.module}/files/avi-controller-azure-all-in-one-play.yml.tpl",
     local.cloud_settings)
-    destination = "/home/admin/avi-controller-azure-all-in-one-play.yml"
+    destination = "/home/admin/ansible/avi-controller-azure-all-in-one-play.yml"
+  }
+  provisioner "file" {
+    content = templatefile("${path.module}/files/gslb-add-site-tasks.yml.tpl",
+    local.cloud_settings)
+    destination = "/home/admin/ansible/gslb-add-site-tasks.yml"
   }
   provisioner "file" {
     content = templatefile("${path.module}/files/avi-cloud-services-registration.yml.tpl",
     local.cloud_settings)
-    destination = "/home/admin/avi-cloud-services-registration.yml"
+    destination = "/home/admin/ansible/avi-cloud-services-registration.yml"
   }
   provisioner "file" {
     content = templatefile("${path.module}/files/avi-upgrade.yml.tpl",
     local.cloud_settings)
-    destination = "/home/admin/avi-upgrade.yml"
+    destination = "/home/admin/ansible/avi-upgrade.yml"
   }
   provisioner "file" {
     content = templatefile("${path.module}/files/avi-cleanup.yml.tpl",
     local.cloud_settings)
-    destination = "/home/admin/avi-cleanup.yml"
+    destination = "/home/admin/ansible/avi-cleanup.yml"
   }
   provisioner "remote-exec" {
     inline = var.configure_controller ? var.create_iam ? [
+      "cd ansible",
       "ansible-playbook avi-controller-azure-all-in-one-play.yml -e password=${var.controller_password} -e azure_app_id=\"${azuread_application.avi[0].application_id}\" -e azure_auth_token=\"${azuread_application_password.avi[0].value}\" -e azure_tenant_id=\"${data.azurerm_subscription.current.tenant_id}\"  2> ansible-error.log | tee ansible-playbook.log",
       "echo Controller Configuration Completed"
       ] : [
+      "cd ansible",
       "ansible-playbook avi-controller-azure-all-in-one-play.yml -e password=${var.controller_password} -e azure_app_id=\"${var.controller_az_app_id}\" -e azure_auth_token=\"${var.controller_az_client_secret}\" -e azure_tenant_id=\"${data.azurerm_subscription.current.tenant_id}\"  2> ansible-error.log | tee ansible-playbook.log",
       "echo Controller Configuration Completed"
       ] : [
+      "cd ansible",
       "ansible-playbook avi-controller-azure-all-in-one-play.yml -e password=${var.controller_password} --tags register_controller 2> ansible-error.log | tee ansible-playbook.log",
       "echo Controller Configuration Completed"
     ]
   }
   provisioner "remote-exec" {
     inline = var.register_controller["enabled"] ? [
+      "cd ansible",
       "ansible-playbook avi-cloud-services-registration.yml -e password=${var.controller_password} 2>> ansible-error.log | tee -a ansible-playbook.log",
       "echo Controller Registration Completed"
     ] : ["echo Controller Registration Skipped"]
   }
   provisioner "remote-exec" {
     inline = var.avi_upgrade["enabled"] ? [
+      "cd ansible",
       "ansible-playbook avi-upgrade.yml -e password=${var.controller_password} -e upgrade_type=${var.avi_upgrade["upgrade_type"]} 2>> ansible-error.log | tee -a ansible-playbook.log",
       "echo Avi upgrade completed"
     ] : ["echo Avi upgrade skipped"]
