@@ -63,10 +63,15 @@
 %{ endif ~}
   tasks:
     - name: Wait for Controller to become ready
-      wait_for:
-        port: 443
-        timeout: 600
-        sleep: 5
+      uri:
+        url: "https://localhost/api/initial-data"
+        validate_certs: no
+        status_code: 200
+      register: result
+      until: result.status == 200
+      retries: 300
+      delay: 10
+
     - name: Configure System Configurations
       avi_systemconfiguration:
         avi_credentials: "{{ avi_credentials }}"
@@ -95,6 +100,7 @@
           redirect_to_https: true
           use_uuid_from_input: false
         welcome_workflow_complete: true
+
     - name: Create a Cloud connector user that is used for authentication to Azure
       avi_cloudconnectoruser:
         avi_credentials: "{{ avi_credentials }}"
@@ -138,6 +144,7 @@
         name: Backup-Configuration
         backup_passphrase: "{{ password }}"
         upload_to_remote_host: false
+
 %{ if se_ha_mode == "active/active" }
     - name: Configure SE-Group
       avi_serviceenginegroup:
@@ -201,7 +208,6 @@
           set_fact:
             dns_service_domain: []
           when: configure_dns_profile.type == "AVI"
-          
 
         - name: Build list for dns_service_domain API field
           set_fact:
@@ -210,7 +216,6 @@
           loop_control:
             loop_var: domain
           when: configure_dns_profile.type == "AVI"
-          
 
         - name: Create Avi DNS Profile
           avi_ipamdnsproviderprofile:
@@ -249,7 +254,7 @@
               usable_domains: "{{ configure_dns_profile.usable_domains }}"
               ttl: "{{ configure_dns_profile.ttl | default('30') }}"
           register: create_dns_aws
-          when: configure_dns_profile.type == "AWS" and route53_integration == false
+          when: configure_dns_profile.type == "AWS"
         
         - name: Update Cloud Configuration with DNS profile
           avi_cloud:
@@ -259,7 +264,7 @@
             name: "{{ cloud_name }}"
             dns_provider_ref: "{{ create_dns_aws.obj.url }}"
             vtype: CLOUD_AZURE
-          when: configure_dns_profile.type == "AWS" and route53_integration == false
+          when: configure_dns_profile.type == "AWS"
       when: configure_dns_profile.enabled == true
       tags: dns_profile
       ignore_errors: yes
@@ -312,10 +317,6 @@
             http_method: get
             path: "vimgrnwruntime?name={{ configure_dns_vs.subnet_name }}"
           register: dns_vs_subnet
-        
-        - name: Display dns_vs_subnet
-          ansible.builtin.debug:
-            var: dns_vs_subnet
 
         - name: Create DNS VSVIP
           avi_vsvip:

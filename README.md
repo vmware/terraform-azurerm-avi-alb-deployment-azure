@@ -149,7 +149,7 @@ module "avi_controller_azure_eastus2" {
   avi_subnet                      = "10.252.0.0/24"
   configure_dns_profile       = { "enabled" = "true", usable_domains = ["east2.avidemo.net"] }
   configure_dns_vs            = { "enabled" = "true", allocate_public_ip = "false" }
-  configure_gslb              = {"enabled = "true", leader = "true", site_name = "East2", domains = ["gslb.avidemo.net"], additional_sites = [{name = "West2", ip_address_list = module.avi_controller_azure_westus2.controllers[*].private_ip_address, dns_vs_name = "DNS-VS"}] }
+  configure_gslb              = {"enabled = "true", leader = "true", site_name = "East2", domains = ["gslb.avidemo.net"], additional_sites = [{name = "West2", ip_address_list = module.avi_controller_azure_westus2.controllers[*].private_ip_address }] }
 }
 output "eastus2_controller_info" {
   value = module.avi_controller_azure_eastus2.controllers
