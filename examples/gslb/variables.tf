@@ -35,6 +35,11 @@ variable "create_iam" {
   type        = bool
   default     = false
 }
+variable "configure_dns_vs" {
+  description = "Create Avi DNS Virtual Service. The subnet_name parameter must be an existing AWS Subnet. If the allocate_public_ip parameter is set to true a EIP will be allocated for the VS. The VS IP address will automatically be allocated via the AWS IPAM"
+  type        = object({ enabled = bool, allocate_public_ip = bool })
+  default     = { enabled = "false", allocate_public_ip = "false" }
+}
 variable "controller_public_address" {
   description = "This variable controls if the Controller has a Public IP Address. When set to false the Ansible provisioner will connect to the private IP of the Controller."
   type        = bool

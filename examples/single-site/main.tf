@@ -19,9 +19,7 @@ module "avi_controller_azure" {
   vnet_address_space           = "10.255.0.0/16"
   avi_subnet                   = "10.255.0.0/24"
   configure_dns_profile        = var.configure_dns_profile
-  dns_service_domain           = var.dns_service_domain
   configure_dns_vs             = var.configure_dns_vs
-  dns_vs_allocate_public_ip    = var.controller_public_address
   controller_az_app_id         = var.create_iam ? null : var.controller_az_app_id
   controller_az_client_secret  = var.create_iam ? null : var.controller_az_client_secret
 }

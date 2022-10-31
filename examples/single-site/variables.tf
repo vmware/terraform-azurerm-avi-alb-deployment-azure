@@ -37,19 +37,24 @@ variable "controller_public_address" {
   default     = true
 }
 variable "configure_dns_profile" {
-  description = "Configure Avi DNS Profile for DNS Record Creation for Virtual Services. If set to true the dns_service_domain variable must also be set"
-  type        = bool
-  default     = false
-}
-variable "dns_service_domain" {
-  description = "The DNS Domain that will be available for Virtual Services. Avi will be the Authorative Nameserver for this domain and NS records may need to be created pointing to the Avi Service Engine addresses. An example is demo.Avi.com"
-  type        = string
-  default     = ""
+  description = "Configure a DNS Profile for DNS Record Creation for Virtual Services. The usable_domains is a list of domains that Avi will be the Authoritative Nameserver for and NS records may need to be created pointing to the Avi Service Engine addresses. Supported profiles for the type parameter are AWS or AVI"
+  type = object({
+    enabled        = bool,
+    type           = optional(string, "AVI"),
+    usable_domains = list(string),
+    ttl            = optional(string, "30"),
+    aws_profile    = optional(object({ iam_assume_role = string, region = string, vpc_id = string, access_key_id = string, secret_access_key = string }))
+  })
+  default = { enabled = false, type = "AVI", usable_domains = [] }
+  validation {
+    condition     = contains(["AWS", "AVI"], var.configure_dns_profile.type)
+    error_message = "Supported DNS Profile types are 'AWS' or 'AVI'"
+  }
 }
 variable "configure_dns_vs" {
-  description = "Create DNS Virtual Service. The configure_dns_profile and configure_ipam_profile variables must be set to true and their associated configuration variables must also be set"
-  type        = bool
-  default     = false
+  description = "Create Avi DNS Virtual Service. The subnet_name parameter must be an existing AWS Subnet. If the allocate_public_ip parameter is set to true a EIP will be allocated for the VS. The VS IP address will automatically be allocated via the AWS IPAM"
+  type        = object({ enabled = bool, allocate_public_ip = bool })
+  default     = { enabled = "false", allocate_public_ip = "false" }
 }
 variable "controller_az_app_id" {
   description = "If the create_iam variable is set to false, this is the Azure Application ID that the Avi Controller will use to create Azure resources"
