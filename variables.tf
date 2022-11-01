@@ -70,15 +70,10 @@ variable "create_networking" {
   type        = bool
   default     = "true"
 }
-variable "create_vnet_peering" {
-  description = "This variable is used to peer the created VNET. If true the vnet_peering_settings variable must be configured"
-  type        = bool
-  default     = "false"
-}
-variable "vnet_peering_settings" {
-  description = "This variable is used to peer the created VNET. If true the vnet_peering_settings variable must be configured"
-  type        = object({ resource_group = string, vnet_name = string, global_peering = bool })
-  default     = null
+variable "configure_vnet_peering" {
+  description = "This variable is used to peer the created VNET with another VNET"
+  type        = object({ enabled = bool, resource_group = string, vnet_name = string, global_peering = bool })
+  default     = { enabled = false, resource_group = "", vnet_name = "", global_peering = true }
 }
 variable "controller_public_address" {
   description = "This variable controls if the Controller has a Public IP Address. When set to false the Ansible provisioner will connect to the private IP of the Controller."

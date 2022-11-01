@@ -7,7 +7,7 @@ This Terraform module creates and configures an AVI (NSX Advanced Load Balancer)
 ## Module Functions
 The module is meant to be modular and can create all or none of the prerequisite resources needed for the AVI Azure Deployment including:
 * VNET and Subnet for the Controller and SEs (configured with create_networking variable)
-* VNET Peering (configured with create_vnet_peering and vnet_peering_settings variables)
+* VNET Peering (configured with the configure_vnet_peering variable)
 * Azure Active Directory Application, Service Principal, Custom Role, and Role Assignment for the Controller (configured with create_iam variable)
 * Network Security Groups for AVI Controller and SE communication (future work)
 * Azure Virtual Machine Instance using an official AVI Azure Marketplace image
@@ -101,7 +101,7 @@ The following is a description of the configure_gslb variable parameters and the
 | se_size   | The Azure VM Size used for the Avi Service Engines | string
 | additional_sites   | Additional sites that will be configured. This parameter should only be set for the primary GSLB site | string
 
-The example below shows a GSLB deployment with 2 regions utilized. VNET Peering is configured (with create_vnet_peering and vnet_peering_settings variables) between the two newly created Avi VNETs so that the controllers can communicate.
+The example below shows a GSLB deployment with 2 regions utilized. VNET Peering is configured (with configure_vnet_peering variable) between the two newly created Avi VNETs so that the controllers can communicate.
 ```hcl
 terraform {
   backend "local" {
@@ -116,8 +116,7 @@ module "avi_controller_azure_westus2" {
   controller_default_password = "Value Redacted and available within the VMware Customer Portal"
   controller_password         = "<newpassword>"
   create_networking           = true
-  create_vnet_peering         = true
-  vnet_peering_settings       = { global_peering = true, resource_group = "rg-<name_prefix>-avi-<region>", vnet_name = "<name_prefix>-avi-vnet-<region>" }
+  configure_vnet_peering         = { enabled = true, global_peering = true, resource_group = "rg-<name_prefix>-avi-<region>", vnet_name = "<name_prefix>-avi-vnet-<region>" }
   create_iam                  = true
   controller_ha               = true
   controller_public_address   = true
@@ -138,8 +137,7 @@ module "avi_controller_azure_eastus2" {
   controller_default_password     = "Value Redacted and available within the VMware Customer Portal"
   controller_password             = "<newpassword>"
   create_networking               = true
-  create_vnet_peering             = true
-  vnet_peering_settings           = { global_peering = true, resource_group = "rg-<name_prefix>-avi-<region>", vnet_name = "<name_prefix>-avi-vnet-<region>" }
+  configure_vnet_peering             = { enabled = true, global_peering = true, resource_group = "rg-<name_prefix>-avi-<region>", vnet_name = "<name_prefix>-avi-vnet-<region>" }
   create_iam                      = true
   controller_ha                   = true
   controller_public_address       = true
@@ -159,7 +157,7 @@ output "westus2_controller_info" {
 }
 ```
 ## Private IP Controller Deployment
-For a controller deployment that is only accesible via private IPs the controller_public_address should be set to false to enable this connectivity. In addition it is recommended to either configure VNET peering with the vnet_peering_settings or manually create resource group and VNET/Subnets and specify them with the create-networking = false, custom_controller_resource_group, custom_vnet_name, and custom_subnet_name variables. This is needed so that the controller IPs can be reached by the Ansible provisioner. 
+For a controller deployment that is only accesible via private IPs the controller_public_address should be set to false to enable this connectivity. In addition it is recommended to either configure VNET peering with the configure_vnet_peering or manually create resource group and VNET/Subnets and specify them with the create-networking = false, custom_controller_resource_group, custom_vnet_name, and custom_subnet_name variables. This is needed so that the controller IPs can be reached by the Ansible provisioner. 
 
 ## Day 1 Ansible Configuration and Avi Resource Cleanup
 The module copies and runs an Ansible play for configuring the initial day 1 Avi config. The plays listed below can be reviewed by connecting to the Avi Controller by SSH. In an HA setup the first controller will have these files. 
@@ -261,6 +259,7 @@ No modules.
 | <a name="input_configure_dns_profile"></a> [configure\_dns\_profile](#input\_configure\_dns\_profile) | Configure a DNS Profile for DNS Record Creation for Virtual Services. The usable\_domains is a list of domains that Avi will be the Authoritative Nameserver for and NS records may need to be created pointing to the Avi Service Engine addresses. Supported profiles for the type parameter are AWS or AVI | <pre>object({<br>    enabled        = bool,<br>    type           = optional(string, "AVI"),<br>    usable_domains = list(string),<br>    ttl            = optional(string, "30"),<br>    aws_profile    = optional(object({ iam_assume_role = string, region = string, vpc_id = string, access_key_id = string, secret_access_key = string }))<br>  })</pre> | <pre>{<br>  "enabled": false,<br>  "type": "AVI",<br>  "usable_domains": []<br>}</pre> | no |
 | <a name="input_configure_dns_vs"></a> [configure\_dns\_vs](#input\_configure\_dns\_vs) | Create Avi DNS Virtual Service. The subnet\_name parameter must be an existing AWS Subnet. If the allocate\_public\_ip parameter is set to true a EIP will be allocated for the VS. The VS IP address will automatically be allocated via the AWS IPAM | `object({ enabled = bool, allocate_public_ip = bool })` | <pre>{<br>  "allocate_public_ip": "false",<br>  "enabled": "false"<br>}</pre> | no |
 | <a name="input_configure_gslb"></a> [configure\_gslb](#input\_configure\_gslb) | Configures GSLB. In addition the configure\_dns\_vs variable must also be set for GSLB to be configured. See the GSLB Deployment README section for more information. | <pre>object({<br>    enabled          = bool,<br>    leader           = optional(bool, false),<br>    site_name        = string,<br>    domains          = optional(list(string)),<br>    create_se_group  = optional(bool, true),<br>    se_size          = optional(string, "Standard_F2s"),<br>    additional_sites = optional(list(object({ name = string, ip_address_list = list(string) })))<br>  })</pre> | <pre>{<br>  "domains": [<br>    ""<br>  ],<br>  "enabled": "false",<br>  "site_name": ""<br>}</pre> | no |
+| <a name="input_configure_vnet_peering"></a> [configure\_vnet\_peering](#input\_configure\_vnet\_peering) | This variable is used to peer the created VNET with another VNET | `object({ enabled = bool, resource_group = string, vnet_name = string, global_peering = bool })` | <pre>{<br>  "enabled": false,<br>  "global_peering": true,<br>  "resource_group": "",<br>  "vnet_name": ""<br>}</pre> | no |
 | <a name="input_controller_az_app_id"></a> [controller\_az\_app\_id](#input\_controller\_az\_app\_id) | If the create\_iam variable is set to false, this is the Azure Application ID that the Avi Controller will use to create Azure resources | `string` | `null` | no |
 | <a name="input_controller_az_client_secret"></a> [controller\_az\_client\_secret](#input\_controller\_az\_client\_secret) | If the create\_iam variable is set to false, this is the Azure Client Secret that the Avi Controller will use to create Azure resources | `string` | `null` | no |
 | <a name="input_controller_default_password"></a> [controller\_default\_password](#input\_controller\_default\_password) | This is the default password for the AVI controller image and can be found in the image download page. | `string` | n/a | yes |
@@ -275,7 +274,6 @@ No modules.
 | <a name="input_create_marketplace_agreement"></a> [create\_marketplace\_agreement](#input\_create\_marketplace\_agreement) | If set to true the user agrees to the terms and conditions for the Avi Marketplace image as found here https://azuremarketplace.microsoft.com/en-us/marketplace/apps/avi-networks.avi-vantage-adc. When multiple instances of this module are used only 1 should have this value set to true to prevent duplicate deployments | `bool` | `"true"` | no |
 | <a name="input_create_networking"></a> [create\_networking](#input\_create\_networking) | This variable controls the VNET and subnet creation for the AVI Controller. When set to false the custom\_controller\_resource\_group, custom\_vnet\_name and custom\_subnet\_name variables must be configured. | `bool` | `"true"` | no |
 | <a name="input_create_resource_group"></a> [create\_resource\_group](#input\_create\_resource\_group) | If true a Resource Group is created and used for the AVI Controllers and Service Engines | `bool` | `"true"` | no |
-| <a name="input_create_vnet_peering"></a> [create\_vnet\_peering](#input\_create\_vnet\_peering) | This variable is used to peer the created VNET. If true the vnet\_peering\_settings variable must be configured | `bool` | `"false"` | no |
 | <a name="input_custom_controller_resource_group"></a> [custom\_controller\_resource\_group](#input\_custom\_controller\_resource\_group) | This field can be used to specify an existing Resource Group for AVI Controllers. The create\_resource\_group variable must also be set to false for this resource group to be used. | `string` | `""` | no |
 | <a name="input_custom_se_resource_group"></a> [custom\_se\_resource\_group](#input\_custom\_se\_resource\_group) | This field can be used to specify an existing Resource Group for Service Engines. | `string` | `null` | no |
 | <a name="input_custom_subnet_name"></a> [custom\_subnet\_name](#input\_custom\_subnet\_name) | This field can be used to specify a list of existing VNET Subnet for the controller and SEs. The create\_networking variable must also be set to false for this network to be used. | `string` | `""` | no |
@@ -293,7 +291,6 @@ No modules.
 | <a name="input_use_azure_dns"></a> [use\_azure\_dns](#input\_use\_azure\_dns) | If true the AVI Cloud is configured to use Azure DNS | `bool` | `"false"` | no |
 | <a name="input_use_standard_alb"></a> [use\_standard\_alb](#input\_use\_standard\_alb) | If true the AVI Cloud is configured to use standard SKU for the Azure LBs that route to Avi SEs | `bool` | `"false"` | no |
 | <a name="input_vnet_address_space"></a> [vnet\_address\_space](#input\_vnet\_address\_space) | The CIDR that will be used for creating a VNET for Avi resources | `string` | `"10.255.0.0/16"` | no |
-| <a name="input_vnet_peering_settings"></a> [vnet\_peering\_settings](#input\_vnet\_peering\_settings) | This variable is used to peer the created VNET. If true the vnet\_peering\_settings variable must be configured | `object({ resource_group = string, vnet_name = string, global_peering = bool })` | `null` | no |
 
 ## Outputs
 

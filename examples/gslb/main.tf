@@ -12,8 +12,7 @@ module "avi_controller_azure_westus2" {
   controller_default_password  = var.controller_default_password
   controller_password          = var.controller_password
   create_networking            = var.create_networking
-  create_vnet_peering          = true
-  vnet_peering_settings        = { global_peering = true, resource_group = "rg-${var.name_prefix_east}-avi-eastus2", vnet_name = "${var.name_prefix_east}-avi-vnet-eastus2" }
+  configure_vnet_peering       = { enabled = true, global_peering = true, resource_group = "rg-${var.name_prefix_east}-avi-eastus2", vnet_name = "${var.name_prefix_east}-avi-vnet-eastus2" }
   create_iam                   = var.create_iam
   controller_ha                = var.controller_ha
   controller_public_address    = var.controller_public_address
@@ -36,8 +35,7 @@ module "avi_controller_azure_eastus2" {
   controller_default_password  = var.controller_default_password
   controller_password          = var.controller_password
   create_networking            = true
-  create_vnet_peering          = true
-  vnet_peering_settings        = { global_peering = true, resource_group = "rg-${var.name_prefix_west}-avi-westus2", vnet_name = "${var.name_prefix_west}-avi-vnet-westus2" }
+  configure_vnet_peering       = { enabled = true, global_peering = true, resource_group = "rg-${var.name_prefix_west}-avi-westus2", vnet_name = "${var.name_prefix_west}-avi-vnet-westus2" }
   create_iam                   = var.create_iam
   controller_ha                = var.controller_ha
   controller_public_address    = var.controller_public_address

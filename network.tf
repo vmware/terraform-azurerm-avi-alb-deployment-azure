@@ -41,11 +41,11 @@ resource "azurerm_network_interface" "avi" {
   }
 }
 resource "azurerm_virtual_network_peering" "avi" {
-  count                     = var.create_vnet_peering ? 1 : 0
+  count                     = var.configure_vnet_peering.enabled ? 1 : 0
   name                      = "avi_vnet_peering"
   resource_group_name       = var.create_resource_group ? azurerm_resource_group.avi[0].name : var.custom_controller_resource_group
   virtual_network_name      = azurerm_virtual_network.avi[0].name
-  remote_virtual_network_id = "${data.azurerm_subscription.current.id}/resourceGroups/${var.vnet_peering_settings.resource_group}/providers/Microsoft.Network/virtualNetworks/${var.vnet_peering_settings.vnet_name}"
+  remote_virtual_network_id = "${data.azurerm_subscription.current.id}/resourceGroups/${var.configure_vnet_peering.resource_group}/providers/Microsoft.Network/virtualNetworks/${var.configure_vnet_peering.vnet_name}"
   allow_gateway_transit     = false
   allow_forwarded_traffic   = true
 }
