@@ -107,6 +107,14 @@ terraform {
   backend "local" {
   }
 }
+provider "azurerm" {
+  features {
+    resource_group {
+      prevent_deletion_if_contains_resources = false
+    }
+  }
+  skip_provider_registration = "true"
+}
 module "avi_controller_azure_westus2" {
   source    = "vmware/avi-alb-deployment-azure/azurerm"
   version   = "1.0.x"
