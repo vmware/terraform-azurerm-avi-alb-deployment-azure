@@ -496,7 +496,7 @@
 %{ else ~}
             name: "{{ name_prefix }}-cluster"
 %{ endif ~}
-            virtual_ip: "{{ cluster_ip if cluster_ip.addr != '' else omit }}"           
+            virtual_ip: "{{ cluster_ip if cluster_ip.addr != '' else omit }}"
             tenant_uuid: "admin"
           until: cluster_config is not failed
           retries: 10
