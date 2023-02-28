@@ -24,6 +24,8 @@ locals {
     configure_gslb            = var.configure_gslb
     se_ha_mode                = var.se_ha_mode
     avi_upgrade               = var.avi_upgrade
+    cluster_ip                = var.cluster_ip
+    license_tier              = var.license_tier
   }
   configure_dns_vs = merge(var.configure_dns_vs, local.dns_vs_subnet)
   dns_vs_subnet = {

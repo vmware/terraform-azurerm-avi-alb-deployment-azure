@@ -15,6 +15,20 @@ variable "create_marketplace_agreement" {
   type        = bool
   default     = "true"
 }
+variable "license_tier" {
+  description = "The license tier to use for Avi. Possible values are ENTERPRISE_WITH_CLOUD_SERVICES or ENTERPRISE"
+  type        = string
+  default     = "ENTERPRISE_WITH_CLOUD_SERVICES"
+  validation {
+    condition     = var.license_tier == "ENTERPRISE_WITH_CLOUD_SERVICES" || var.license_tier == "ENTERPRISE"
+    error_message = "The license_tier variable must be ENTERPRISE_WITH_CLOUD_SERVICES or ENTERPRISE."
+  }
+}
+variable "cluster_ip" {
+  description = "Optional sets the IP address of the Avi Controller cluster. This address must be in the same subnet as the Avi Controller VMs."
+  type        = string
+  default     = null
+}
 variable "use_standard_alb" {
   description = "If true the AVI Cloud is configured to use standard SKU for the Azure LBs that route to Avi SEs"
   type        = bool

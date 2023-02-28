@@ -17,8 +17,18 @@
     password: "{{ password }}"
     api_version: ${avi_version}
     cloud_name: "Default-Cloud"
+    license_tier: ${license_tier}
     controller_ip:
       ${ indent(6, yamlencode(controller_ip))}
+%{ if cluster_ip != null ~}
+    cluster_ip:
+      type: V4
+      addr: ${cluster_ip}
+%{ else ~}
+    cluster_ip:
+      type: V4
+      addr: ""
+%{ endif ~}
     controller_names:
       ${ indent(6, yamlencode(controller_names))}
     ansible_become: yes
@@ -76,6 +86,7 @@
       avi_systemconfiguration:
         avi_credentials: "{{ avi_credentials }}"
         state: present
+        default_license_tier: "{{ license_tier }}"
         email_configuration:
           smtp_type: "SMTP_LOCAL_HOST"
           from_email: admin@avicontroller.net
@@ -452,16 +463,13 @@
     - name: Configure Cluster
       block:
         - name: Configure Cluster Credentials
-          avi_api_session:
+          avi_clusterclouddetails:
             avi_credentials: "{{ avi_credentials }}"
-            http_method: post
-            path: "clusterclouddetails"
             tenant: "admin"
-            data:
-              name: "azure"
-              azure_info:
-                subscription_id: "{{ subscription_id }}"
-                cloud_credential_ref: "/api/cloudconnectoruser?name=azure"
+            name: "azure"
+            azure_info:
+              subscription_id: "{{ subscription_id }}"
+              cloud_credential_ref: "/api/cloudconnectoruser?name=azure"
 
         - name: Controller Cluster Configuration
           avi_cluster:
@@ -487,7 +495,8 @@
             name: "{{ name_prefix }}-{{ configure_gslb.site_name }}-cluster"
 %{ else ~}
             name: "{{ name_prefix }}-cluster"
-%{ endif ~}            
+%{ endif ~}
+            virtual_ip: "{{ cluster_ip if cluster_ip.addr != '' else omit }}"           
             tenant_uuid: "admin"
           until: cluster_config is not failed
           retries: 10
