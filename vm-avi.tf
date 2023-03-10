@@ -26,6 +26,8 @@ locals {
     avi_upgrade               = var.avi_upgrade
     cluster_ip                = var.cluster_ip
     license_tier              = var.license_tier
+    license_key               = var.license_key
+    zones                     = local.zones ? 3 : null
   }
   configure_dns_vs = merge(var.configure_dns_vs, local.dns_vs_subnet)
   dns_vs_subnet = {
