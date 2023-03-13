@@ -191,13 +191,28 @@ Example run (appropriate variable values should be used):
 ```bash
 ~$ ansible-playbook avi-upgrade.yml -e password=${var.controller_password} -e upgrade_type=${var.avi_upgrade.upgrade_type} -e upgrade_file_uri=${var.avi_upgrade.upgrade_file_uri} > ansible-playbook-run.log
 ```
+### avi-cloud-services-registration.yml
+This play will register the Controller with Avi Cloud Services. This can be done to enable centralized licensing, live security threat updates, and proactive support. When ran this play will output into the ansible-playbook.log file which can be reviewed to determine what tasks were ran. This play can be ran during the initial Terraform deployment with the register_controller variable as shown in the example below:
 
-### avi-cleanup.yml
-This play will disable all Virtual Services and delete all existing Avi service engines. This playbook should be ran before deleting the controller with terraform destroy to clean up the resources created by the Avi Controller. 
+```hcl
+register_controller = { enabled = "true", jwt_token = "TOKEN", email = "EMAIL", organization_id = "LONG_ORG_ID" }
+```
+
+The organization_id can be found as the Long Organization ID field from https://console.cloud.vmware.com/csp/gateway/portal/#/organization/info.
+
+The jwt_token can be retrieved at https://portal.avipulse.vmware.com/portal/controller/auth/cspctrllogin.
 
 Example run (appropriate variable values should be used):
 ```bash
-~$ ansible-playbook avi-cleanup.yml -e password=${var.controller_password}
+~$ ansible-playbook avi-cloud-services-registration.yml -e password=${var.controller_password} -e register_controller.jwt_token=${var.register_controller.jwt_token} > ansible-playbook-run.log
+```
+
+### avi-cleanup.yml
+This play will disable all Virtual Services, delete all existing Avi service engines, and de-register the controller from Cloud Services. This playbook should be ran before deleting the controller with terraform destroy to clean up the resources created by the Avi Controller. Note that additional items created by the controller may be created and need to be manually removed.
+
+Example run (appropriate variable values should be used and -e register_controller.jwt_token is only needed when register_controller.enabled is set to true):
+```bash
+~$ ansible-playbook avi-cleanup.yml -e password=${var.controller_password} -e register_controller.jwt_token=${var.register_controller.jwt_token}
 ```
 
 ## Contributing
