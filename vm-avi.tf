@@ -27,6 +27,9 @@ locals {
     cluster_ip                = var.cluster_ip
     license_tier              = var.license_tier
     license_key               = var.license_key
+    portal_certificate        = var.portal_certificate
+    securechannel_certificate = var.securechannel_certificate
+    ca_certificates           = var.ca_certificates
     zones                     = local.zones ? 3 : null
   }
   configure_dns_vs = merge(var.configure_dns_vs, local.dns_vs_subnet)
