@@ -176,7 +176,7 @@
         portal_configuration:
           sslkeyandcertificate_refs:
             - "/api/sslkeyandcertificate?name={{ name_prefix }}-Portal-Cert"
-      when: portal_cert is not failed
+      when: portal_cert is changed
       ignore_errors: yes
 
     - name: Import Secure Channel SSL Certificate
@@ -203,7 +203,7 @@
         secure_channel_configuration:
           sslkeyandcertificate_refs:
             - "/api/sslkeyandcertificate?name={{ name_prefix }}-Secure-Channel-Cert"
-      when: securechannel_cert is not failed
+      when: securechannel_cert is changed
 
     - name: Create a Cloud connector user that is used for authentication to Azure
       avi_cloudconnectoruser:
